@@ -7,6 +7,7 @@ from tensorflow.keras.layers import LSTM, Dense
 from sklearn.preprocessing import MinMaxScaler
 import warnings
 import streamlit as st
+from llm_provider import explain
 
 # ignore warnings
 warnings.filterwarnings("ignore")
@@ -26,6 +27,19 @@ st.markdown("<h1 style = 'text-align: center; margin-top: -20px; '>LSTM Forecast
 st.sidebar.header("Model Parameters")
 crypto_symbol = st.sidebar.text_input("Cryptocurrency Symbol", "BTC-USD")
 prediction_ahead = st.sidebar.number_input("Prediction Days Ahead", min_value = 1, max_value = 30, value = 15, step = 1)
+
+# LM Studio / IBM Watson Studio
+st.sidebar.header("LLM Settings")
+
+provider = st.sidebar.selectbox("LLM Provider", ["LM Studio", "IBM watsonx"])
+
+# LM Studio model name must match what LM Studio shows in its server UI
+lmstudio_model = st.sidebar.text_input("LM Studio model name", "llama-3-8b-instruct-finance-rag")
+
+# IBM model_id examples depend on your watsonx account; you can change later
+watsonx_model_id = st.sidebar.text_input("IBM watsonx model_id", "ibm/granite-4-h-small")
+
+model_name = lmstudio_model if provider == "LM Studio" else watsonx_model_id
 
 if st.sidebar.button("Predict"):
     # Step 1: Pull Crypto data for the past 1 year.
@@ -102,6 +116,26 @@ if st.sidebar.button("Predict"):
     latest_close_price = float(btc_data['Close'].iloc[-1])
     last_predicted_price = float(future_forecast[-1])
 
+    # Create a prompt using your computed numbers (after we compute metrics)
+    predicted_change_pct = ((last_predicted_price - latest_close_price) / latest_close_price) * 100.0
+
+    prompt = f"""
+    Educational use only (not financial advice).
+
+    Asset: {crypto_symbol}
+    Latest close price: ${latest_close_price:,.2f}
+    Predicted price after {int(prediction_ahead)} day(s): ${last_predicted_price:,.2f}
+    Predicted change (%): {predicted_change_pct:.2f}
+
+    Task:
+    1) Explain what this forecast suggests in simple terms.
+    2) Give a risk label (Low/Medium/High) and why.
+    3) Give 3 bullet points for "what to watch next".
+    Rules:
+    - Use only the numbers above.
+    - Do not claim certainty or guaranteed returns.
+    """
+
     # Centered layout for metrics
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
@@ -143,4 +177,45 @@ if st.sidebar.button("Predict"):
     st.pyplot(fig)
     plt.close(fig)
 
+    # Adding the “Explain with AI” button (after our chart or after metrics)
+    st.subheader("Explain with AI")
+
+    if st.button("Explain with AI"):
+        try:
+            explanation = explain(provider, prompt, model_name)
+            st.write(explanation)
+        except Exception as e:
+            st.error(f"LLM error: {e}")
+
+    # Add a Chat box
+    st.subheader("Chat (grounded)")
+
+    user_q = st.text_input("Ask a question about this forecast (example: 'Explain risk', 'What does +% mean?')")
+
+    if user_q:
+        chat_prompt = f"""
+    Educational use only.
+
+    Context:
+    Asset: {crypto_symbol}
+    Latest close: ${latest_close_price:,.2f}
+    Predicted after {int(prediction_ahead)} day(s): ${last_predicted_price:,.2f}
+    Change (%): {predicted_change_pct:.2f}
+
+    User question: {user_q}
+
+    Rules:
+    - Use only the context numbers.
+    - If user asks for something not in context, say what is missing.
+    """
+        try:
+            ans = explain(provider, chat_prompt, model_name)
+            st.write(ans)
+        except Exception as e:
+            st.error(f"LLM error: {e}")
+
 # Streamlit run LSTM_ST.py
+
+# export WATSONX_APIKEY="D-F_5HKTRZ_m_a7NyYMIQmukwDDIf-QDg8wJ2OiNGWR_"
+# export WATSONX_URL="https://us-south.ml.cloud.ibm.com"
+# export WATSONX_PROJECT_ID="cc04fdd9-fb2c-46f0-9992-afe0f130b4cb"
