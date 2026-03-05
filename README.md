@@ -263,5 +263,3 @@ Saint Peter’s University
 
 GitHub
 [https://github.com/kartavyabh24](https://github.com/kartavyabh24)
-
-If you want, I can also show you **one more small trick that will make this project look extremely impressive on GitHub** (something most students don’t know): adding **GitHub badges for model accuracy, dataset, and Streamlit deployment**. It makes your project look **like a professional open-source ML repo.** 🚀
