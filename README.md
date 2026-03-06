@@ -1,6 +1,6 @@
 # NeuroBlock – LSTM Cryptocurrency Forecasting Platform
 
-![Python](https://img.shields.io/badge/Python-3.10-blue)
+![Python](https://img.shields.io/badge/Python-3.11-blue)
 ![TensorFlow](https://img.shields.io/badge/TensorFlow-Deep%20Learning-orange)
 ![Streamlit](https://img.shields.io/badge/Streamlit-Web%20App-red)
 ![License](https://img.shields.io/badge/License-MIT-green)
